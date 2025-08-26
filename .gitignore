@@ -1,0 +1,39 @@
+# Node.js dependencies
+node_modules/
+/node_modules
+
+# Environment variables (CRITICAL: Never commit these)
+.env
+.env.local
+.env.development
+.env.production
+.env.staging
+
+# Build outputs
+dist/
+build/
+
+# Logs
+logs/
+*.logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
