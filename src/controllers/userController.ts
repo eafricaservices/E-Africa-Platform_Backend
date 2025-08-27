@@ -2,8 +2,12 @@ import { Request, Response } from "express";
 import User from "../model/user";
 import validateUserForm, { validatePasswordUpdate } from "../helpers/validateUserForm";
 import { logValidation, logDatabaseOperation } from "../middleware/logging";
-import { generateVerificationToken } from "../helpers/emailVerification";
-import { sendVerificationEmail } from "../services/emailService";
+import { 
+    generateSecureSixDigitCode, 
+    generateCodeExpiration,
+    logVerificationCodeGenerated 
+} from "../helpers/verificationCodes";
+import { sendVerificationCodeEmail } from "../services/emailService";
 import logger from "../config/logger";
 
 // Create User
@@ -30,11 +34,20 @@ export const createUser = async (req: Request, res: Response) => {
     const user = await User.create(userData);
     logDatabaseOperation(req, 'User.create', 'success', user);
 
-    // Generate verification token
-    const verificationToken = generateVerificationToken(user.userId, user.email);
+    // Generate verification code
+    const verificationCode = generateSecureSixDigitCode();
+    const expirationDate = generateCodeExpiration();
+
+    // Save verification code to user
+    user.emailVerificationCode = verificationCode;
+    user.emailVerificationExpires = expirationDate;
+    await user.save();
 
     // Send verification email
-    const emailResult = await sendVerificationEmail(user.email, verificationToken, user.fullName);
+    const emailResult = await sendVerificationCodeEmail(user.email, verificationCode, user.fullName);
+    
+    // Log for audit trail
+    logVerificationCodeGenerated(user.userId, user.email, 'email');
     
     if (!emailResult.success) {
       logger.error('Failed to send verification email', {
@@ -47,7 +60,7 @@ export const createUser = async (req: Request, res: Response) => {
     // Return success response
     return res.status(201).json({
       success: true,
-      message: 'User created successfully. Please check your email to verify your account.',
+      message: 'User created successfully. Please check your email for the verification code.',
       data: {
         userId: user.userId,
         fullName: user.fullName,
@@ -113,58 +126,6 @@ export const getUserById = async (req: Request, res: Response) => {
 };
 
 // Update User
-// Verify Email
-// export const verifyEmail = async (req: Request, res: Response) => {
-//   const { token } = req.params;
-
-//   try {
-//     // Verify the token
-//     const decoded = verifyEmailToken(token);
-    
-//     if (!decoded) {
-//       return res.status(400).json({
-//         success: false,
-//         message: 'Invalid or expired verification token'
-//       });
-//     }
-
-//     // Find and update the user
-//     const user = await User.findOneAndUpdate(
-//       { userId: decoded.userId, email: decoded.email, isVerified: false },
-//       { $set: { isVerified: true } },
-//       { new: true }
-//     );
-
-//     if (!user) {
-//       return res.status(400).json({
-//         success: false,
-//         message: 'Invalid verification token'
-//       });
-//     }
-
-//     // Log successful verification
-//     logger.info('Email verified successfully', {
-//       userId: user.userId,
-//       email: user.email
-//     });
-
-//     return res.status(200).json({
-//       success: true,
-//       message: 'Email verified successfully',
-//       data: {
-//         userId: user.userId,
-//         email: user.email,
-//         isVerified: user.isVerified
-//       }
-//     });
-//   } catch (error) {
-//     logger.error('Email verification error', {
-//       token,
-//       error: error instanceof Error ? error.message : error
-//     });
-
-//     return res.status(400).json({
-//       success: false,
 //       message: 'Email verification failed. Please try again or request a new verification link.'
 //     });
 //   }

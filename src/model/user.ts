@@ -35,6 +35,14 @@ export interface IUser extends Document {
   preference?: WorkPreference;
   createdAt?: Date;
 
+  // Email verification fields
+  emailVerificationCode?: string;
+  emailVerificationExpires?: Date;
+  
+  // Password reset fields
+  passwordResetCode?: string;
+  passwordResetExpires?: Date;
+
   // Instance methods
   comparePassword(password: string): Promise<boolean>;
 }
@@ -75,6 +83,14 @@ const UserSchema: Schema = new Schema<IUser>(
     howDidYouHear: { type: String, enum: referralSourceOptions },
     preferredTraining: { type: String, enum: trainingCategoryOptions },
     reason: { type: String },
+
+    // Email verification fields
+    emailVerificationCode: { type: String },
+    emailVerificationExpires: { type: Date },
+    
+    // Password reset fields
+    passwordResetCode: { type: String },
+    passwordResetExpires: { type: Date },
   },
   { 
     timestamps: true,

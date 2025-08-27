@@ -28,15 +28,29 @@ const createTransporter = () => {
     });
 };
 
-/** Send verification email to new users */
-export const sendVerificationEmail = async (
+/** Test the email service configuration */
+export const testEmailConfig = async (): Promise<EmailResponse> => {
+    try {
+        const transporter = createTransporter();
+        await transporter.verify();
+        logger.info('Email configuration verified successfully');
+        return { success: true, message: 'Email service is configured correctly' };
+    } catch (error) {
+        logger.error('Email configuration test failed', {
+            error: error instanceof Error ? error.message : 'Unknown error'
+        });
+        return { success: false, error: 'Email service configuration failed' };
+    }
+};
+
+/** Send verification code email to new users */
+export const sendVerificationCodeEmail = async (
     email: string,
-    token: string,
+    verificationCode: string,
     fullName: string
 ): Promise<EmailResponse> => {
     try {
         const transporter = createTransporter();
-        const verificationUrl = `${config.frontendUrl}/verify-email?token=${token}`;
 
         const mailOptions = {
             from: {
@@ -44,14 +58,14 @@ export const sendVerificationEmail = async (
                 address: config.smtp.from
             },
             to: email,
-            subject: 'Verify Your Email - E-Africa Platform',
+            subject: 'Your Email Verification Code - E-Africa Platform',
             html: `
                 <!DOCTYPE html>
                 <html lang="en">
                 <head>
                     <meta charset="UTF-8">
                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <title>Email Verification</title>
+                    <title>Email Verification Code</title>
                     <style>
                         body { 
                             font-family: Arial, sans-serif;
@@ -78,18 +92,20 @@ export const sendVerificationEmail = async (
                             border-radius: 0 0 8px 8px;
                             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
                         }
-                        .button {
-                            display: inline-block;
-                            background: #667eea;
-                            color: white !important;
-                            padding: 12px 30px;
-                            text-decoration: none;
-                            border-radius: 5px;
-                            margin: 20px 0;
-                            font-weight: bold;
+                        .verification-code {
+                            background: #f8f9ff;
+                            border: 2px solid #667eea;
+                            padding: 20px;
+                            text-align: center;
+                            border-radius: 8px;
+                            margin: 25px 0;
                         }
-                        .button:hover {
-                            background: #5a6fd6;
+                        .code-text {
+                            font-size: 32px;
+                            font-weight: bold;
+                            color: #667eea;
+                            letter-spacing: 8px;
+                            font-family: 'Courier New', monospace;
                         }
                         .warning {
                             background: #fff3cd;
@@ -100,58 +116,46 @@ export const sendVerificationEmail = async (
                             color: #856404;
                         }
                         .footer {
-                            text-align: center;
-                            margin-top: 20px;
-                            color: #666;
+                            color: #6c757d;
                             font-size: 14px;
-                        }
-                        .link-box {
-                            background: #f8f9fa;
-                            padding: 15px;
-                            border-radius: 4px;
-                            word-break: break-all;
-                            margin: 15px 0;
-                            border: 1px solid #e9ecef;
+                            text-align: center;
+                            margin-top: 30px;
+                            padding-top: 20px;
+                            border-top: 1px solid #dee2e6;
                         }
                     </style>
                 </head>
                 <body>
                     <div class="container">
                         <div class="header">
-                            <h1>🚀 Welcome to E-Africa Platform!</h1>
+                            <h1>🔐 Email Verification</h1>
                         </div>
                         <div class="content">
                             <h2>Hello ${fullName}!</h2>
-                            <p>Thank you for joining the E-Africa Platform. We're excited to have you as part of our community!</p>
                             
-                            <p>To complete your registration and activate your account, please verify your email address by clicking the button below:</p>
+                            <p>Thank you for registering with E-Africa Platform. To complete your account verification, please use the 6-digit code below:</p>
                             
-                            <div style="text-align: center;">
-                                <a href="${verificationUrl}" class="button">✅ Verify Email Address</a>
+                            <div class="verification-code">
+                                <p><strong>Your Verification Code:</strong></p>
+                                <div class="code-text">${verificationCode}</div>
                             </div>
                             
                             <div class="warning">
-                                <strong>⚠️ Important:</strong> This verification link will expire in 24 hours for security purposes.
+                                <strong>⚠️ Important:</strong>
+                                <ul>
+                                    <li>This code will expire in <strong>15 minutes</strong></li>
+                                    <li>Never share this code with anyone</li>
+                                    <li>If you didn't request this verification, please ignore this email</li>
+                                </ul>
                             </div>
                             
-                            <p>If the button doesn't work, you can copy and paste this link into your browser:</p>
-                            <div class="link-box">
-                                ${verificationUrl}
-                            </div>
+                            <p>Simply enter this code on the verification page to activate your account and start exploring opportunities on E-Africa Platform.</p>
                             
-                            <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
-                            
-                            <h3>🌍 What's Next?</h3>
-                            <ul>
-                                <li><strong>Explore Opportunities:</strong> Browse training programs and job opportunities</li>
-                                <li><strong>Build Your Profile:</strong> Complete your profile to get personalized recommendations</li>
-                                <li><strong>Connect:</strong> Join our community of talents and companies across Africa</li>
-                            </ul>
+                            <p>Welcome to the future of work in Africa! 🌍</p>
                         </div>
                         <div class="footer">
-                            <p>© ${new Date().getFullYear()} E-Africa Platform. All rights reserved.</p>
-                            <p>Building bridges across Africa, one connection at a time.</p>
-                            <p>If you didn't create this account, please ignore this email.</p>
+                            <p>© ${new Date().getFullYear()} E-Africa Platform<br>
+                            This is an automated message, please do not reply.</p>
                         </div>
                     </div>
                 </body>
@@ -160,50 +164,43 @@ export const sendVerificationEmail = async (
             text: `
                 Hello ${fullName}!
                 
-                Welcome to E-Africa Platform! Thank you for joining our community.
+                Thank you for registering with E-Africa Platform.
                 
-                To complete your registration and activate your account, please verify your email address by clicking the following link:
-                ${verificationUrl}
+                Your verification code is: ${verificationCode}
                 
-                Important: This verification link will expire in 24 hours.
+                This code will expire in 15 minutes.
                 
-                What's Next?
-                • Explore Opportunities: Browse training programs and job opportunities
-                • Build Your Profile: Complete your profile to get personalized recommendations
-                • Connect: Join our community of talents and companies across Africa
-                
-                If you didn't create this account, please ignore this email.
+                If you didn't request this verification, please ignore this email.
                 
                 © ${new Date().getFullYear()} E-Africa Platform
-                Building bridges across Africa, one connection at a time.
+                This is an automated message, please do not reply.
             `
         };
 
         const result = await transporter.sendMail(mailOptions);
-        logger.info('Verification email sent successfully', {
+        logger.info('Verification code email sent successfully', {
             email,
             messageId: result.messageId
         });
 
         return { success: true, messageId: result.messageId };
     } catch (error) {
-        logger.error('Error sending verification email', {
+        logger.error('Error sending verification code email', {
             email,
             error: error instanceof Error ? error.message : 'Unknown error'
         });
-        return { success: false, error: 'Failed to send verification email' };
+        return { success: false, error: 'Failed to send verification code email' };
     }
 };
 
-/** Send password reset email to users */
-export const sendPasswordResetEmail = async (
+/** Send password reset code email */
+export const sendPasswordResetCodeEmail = async (
     email: string,
-    token: string,
+    resetCode: string,
     fullName: string
 ): Promise<EmailResponse> => {
     try {
         const transporter = createTransporter();
-        const resetUrl = `${config.frontendUrl}/reset-password?token=${token}`;
 
         const mailOptions = {
             from: {
@@ -211,14 +208,14 @@ export const sendPasswordResetEmail = async (
                 address: config.smtp.from
             },
             to: email,
-            subject: 'Password Reset Request - E-Africa Platform',
+            subject: 'Your Password Reset Code - E-Africa Platform',
             html: `
                 <!DOCTYPE html>
                 <html lang="en">
                 <head>
                     <meta charset="UTF-8">
                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <title>Password Reset</title>
+                    <title>Password Reset Code</title>
                     <style>
                         body { 
                             font-family: Arial, sans-serif;
@@ -233,7 +230,7 @@ export const sendPasswordResetEmail = async (
                             padding: 20px;
                         }
                         .header {
-                            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+                            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
                             color: white;
                             padding: 20px;
                             text-align: center;
@@ -245,89 +242,71 @@ export const sendPasswordResetEmail = async (
                             border-radius: 0 0 8px 8px;
                             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
                         }
-                        .button {
-                            display: inline-block;
-                            background: #ff6b6b;
-                            color: white !important;
-                            padding: 12px 30px;
-                            text-decoration: none;
-                            border-radius: 5px;
-                            margin: 20px 0;
-                            font-weight: bold;
+                        .verification-code {
+                            background: #fff5f5;
+                            border: 2px solid #dc3545;
+                            padding: 20px;
+                            text-align: center;
+                            border-radius: 8px;
+                            margin: 25px 0;
                         }
-                        .button:hover {
-                            background: #ff5252;
+                        .code-text {
+                            font-size: 32px;
+                            font-weight: bold;
+                            color: #dc3545;
+                            letter-spacing: 8px;
+                            font-family: 'Courier New', monospace;
                         }
                         .warning {
-                            background: #ffe6e6;
-                            border: 1px solid #ffcccc;
+                            background: #f8d7da;
+                            border: 1px solid #f5c6cb;
                             padding: 15px;
                             border-radius: 4px;
                             margin: 15px 0;
-                            color: #cc0000;
-                        }
-                        .security {
-                            background: #e7f5fe;
-                            border: 1px solid #b8e3ff;
-                            padding: 15px;
-                            border-radius: 4px;
-                            margin: 15px 0;
-                            color: #0066cc;
+                            color: #721c24;
                         }
                         .footer {
-                            text-align: center;
-                            margin-top: 20px;
-                            color: #666;
+                            color: #6c757d;
                             font-size: 14px;
-                        }
-                        .link-box {
-                            background: #f8f9fa;
-                            padding: 15px;
-                            border-radius: 4px;
-                            word-break: break-all;
-                            margin: 15px 0;
-                            border: 1px solid #e9ecef;
+                            text-align: center;
+                            margin-top: 30px;
+                            padding-top: 20px;
+                            border-top: 1px solid #dee2e6;
                         }
                     </style>
                 </head>
                 <body>
                     <div class="container">
                         <div class="header">
-                            <h1>🔐 Password Reset Request</h1>
+                            <h1>🔑 Password Reset</h1>
                         </div>
                         <div class="content">
                             <h2>Hello ${fullName}!</h2>
-                            <p>We received a request to reset the password for your E-Africa Platform account.</p>
                             
-                            <p>If you requested this password reset, click the button below to set a new password:</p>
+                            <p>We received a request to reset your password for your E-Africa Platform account. Use the 6-digit code below to reset your password:</p>
                             
-                            <div style="text-align: center;">
-                                <a href="${resetUrl}" class="button">🔑 Reset Password</a>
+                            <div class="verification-code">
+                                <p><strong>Your Reset Code:</strong></p>
+                                <div class="code-text">${resetCode}</div>
                             </div>
                             
                             <div class="warning">
-                                <strong>⚠️ Important:</strong> This password reset link will expire in 30 mins for security purposes.
-                            </div>
-                            
-                            <p>If the button doesn't work, you can copy and paste this link into your browser:</p>
-                            <div class="link-box">
-                                ${resetUrl}
-                            </div>
-                            
-                            <div class="security">
-                                <h4>🛡️ Security Tips:</h4>
+                                <strong>🛡️ Security Notice:</strong>
                                 <ul>
-                                    <li>Use a strong, unique password</li>
-                                    <li>Never share your login credentials</li>
-                                    <li>Enable two-factor authentication if available</li>
-                                    <li>Always log out from shared devices</li>
+                                    <li>This code will expire in <strong>30 minutes</strong></li>
+                                    <li>Never share this code with anyone</li>
+                                    <li>E-Africa Platform will never ask for your password via email</li>
+                                    <li>If you didn't request this reset, please secure your account immediately</li>
                                 </ul>
                             </div>
+                            
+                            <p>Enter this code along with your new password to complete the reset process.</p>
+                            
+                            <p><strong>If you didn't request this password reset, please ignore this email or contact our support team if you're concerned about your account security.</strong></p>
                         </div>
                         <div class="footer">
-                            <p>© ${new Date().getFullYear()} E-Africa Platform. All rights reserved.</p>
-                            <p>If you didn't request this password reset, please ignore this email.</p>
-                            <p>This is an automated message, please do not reply.</p>
+                            <p>© ${new Date().getFullYear()} E-Africa Platform<br>
+                            This is an automated message, please do not reply.</p>
                         </div>
                     </div>
                 </body>
@@ -336,18 +315,11 @@ export const sendPasswordResetEmail = async (
             text: `
                 Hello ${fullName}!
                 
-                We received a request to reset the password for your E-Africa Platform account.
+                We received a request to reset your password for your E-Africa Platform account.
                 
-                If you requested this password reset, please click the following link to set a new password:
-                ${resetUrl}
+                Your password reset code is: ${resetCode}
                 
-                Important: This password reset link will expire in 30 mins for security purposes.
-                
-                Security Tips:
-                • Use a strong, unique password
-                • Never share your login credentials
-                • Enable two-factor authentication if available
-                • Always log out from shared devices
+                This code will expire in 30 minutes.
                 
                 If you didn't request this password reset, please ignore this email.
                 
@@ -357,32 +329,17 @@ export const sendPasswordResetEmail = async (
         };
 
         const result = await transporter.sendMail(mailOptions);
-        logger.info('Password reset email sent successfully', {
+        logger.info('Password reset code email sent successfully', {
             email,
             messageId: result.messageId
         });
 
         return { success: true, messageId: result.messageId };
     } catch (error) {
-        logger.error('Error sending password reset email', {
+        logger.error('Error sending password reset code email', {
             email,
             error: error instanceof Error ? error.message : 'Unknown error'
         });
-        return { success: false, error: 'Failed to send password reset email' };
-    }
-};
-
-/** Test the email service configuration */
-export const testEmailConfig = async (): Promise<EmailResponse> => {
-    try {
-        const transporter = createTransporter();
-        await transporter.verify();
-        logger.info('Email configuration verified successfully');
-        return { success: true, message: 'Email service is configured correctly' };
-    } catch (error) {
-        logger.error('Email configuration test failed', {
-            error: error instanceof Error ? error.message : 'Unknown error'
-        });
-        return { success: false, error: 'Email service configuration failed' };
+        return { success: false, error: 'Failed to send password reset code email' };
     }
 };
