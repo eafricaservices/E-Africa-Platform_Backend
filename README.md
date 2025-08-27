@@ -199,9 +199,8 @@ All API endpoints are prefixed with `/api`:
 - **POST** `/api/auth/google` — Google OAuth login
 - **POST** `/api/auth/refresh` — Refresh JWT token
 - **POST** `/api/auth/logout` — User logout
-- **POST** `/api/auth/verify-email` — Verify email address
 - **POST** `/api/auth/forgot-password` — Request password reset
-- **POST** `/api/auth/reset-password` — Reset password with token
+- **POST** `/api/auth/reset-password` — Reset password with code
 
 ### User Management
 
@@ -258,11 +257,26 @@ All API endpoints are prefixed with `/api`:
 - **GET** `/api/contact-messages/:id` — Get specific contact message
 - **DELETE** `/api/contact-messages/:id` — Delete contact message
 
-### Email Verification
+### Email & Password Verification (6-digit Code System)
 
-- **POST** `/api/verification/send` — Send verification email
-- **POST** `/api/verification/verify` — Verify email token
-- **POST** `/api/verification/resend` — Resend verification email
+- **POST** `/api/verification/send` — Send a 6-digit verification code to user's email
+
+  - Request: `{ "email": "user@example.com" }`
+  - Response: `{ "success": true, "message": "Verification code sent" }`
+
+- **POST** `/api/verification/verify` — Verify the 6-digit code sent to email
+
+  - Request: `{ "email": "user@example.com", "code": "123456" }`
+  - Response: `{ "success": true, "message": "Email verified" }`
+
+- **POST** `/api/verification/resend` — Resend the 6-digit verification code
+
+  - Request: `{ "email": "user@example.com" }`
+  - Response: `{ "success": true, "message": "Verification code resent" }`
+
+- **POST** `/api/auth/reset-password` — Reset password using a 6-digit code
+  - Request: `{ "email": "user@example.com", "code": "123456", "newPassword": "NewPassword123!" }`
+  - Response: `{ "success": true, "message": "Password reset successful" }`
 
 ## 🔒 Authentication & Security
 
@@ -288,7 +302,34 @@ API includes rate limiting to prevent abuse:
 
 - **General requests**: 100 requests per 15 minutes
 - **Authentication**: 10 requests per 15 minutes
-- **Email sending**: 5 requests per hour
+- **Email/code sending**: 5 requests per hour
+
+### Logging & Security Best Practices
+
+- In production, sensitive data (passwords, codes, tokens, emails) are never logged.
+- Only log minimal request metadata and errors.
+- Use log rotation and secure storage for logs.
+- Set log level to `error` or `warn` in production.
+- Never expose logs via public endpoints.
+
+### Email Verification Security
+
+- Verification codes expire after 10 minutes.
+- Maximum 5 code requests per hour per user.
+- Codes are single-use and securely hashed in the database.
+
+### Password Reset Security
+
+- Password reset uses the same 6-digit code system.
+- Codes expire after 10 minutes and are single-use.
+
+### General Security
+
+- Always use HTTPS in production.
+- Use strong secrets for JWT and SMTP.
+- Restrict CORS origins to trusted domains.
+
+For more, see `SECURITY.md` and `SECURITY_FIXES_REPORT.md`.
 
 ## 📦 Request/Response Format
 
