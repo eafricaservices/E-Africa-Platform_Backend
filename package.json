@@ -2,16 +2,20 @@
   "name": "e-africa-landing-page_backend",
   "version": "1.0.0",
   "description": "",
-  "main": "src/app.ts",
+  "main": "dist/app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon src/app.ts",
     "build": "tsc",
+    "postbuild": "echo 'Build completed successfully'",
     "start": "node dist/app.js",
     "start:dev": "npm run dev",
     "build:prod": "npm run build && npm prune --production",
+    "postinstall": "npm run build",
     "logs:error": "tail -f logs/error.logs",
-    "logs:combined": "tail -f logs/request.logs"
+    "logs:combined": "tail -f logs/request.logs",
+    "clean": "rm -rf dist",
+    "prebuild": "npm run clean"
   },
   "keywords": [],
   "author": "",
@@ -32,9 +36,8 @@
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "uuid": "^11.1.0",
-    "winston": "^3.17.0"
-  },
-  "devDependencies": {
+    "winston": "^3.17.0",
+    "typescript": "^5.8.3",
     "@types/bcryptjs": "^3.0.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
@@ -44,9 +47,10 @@
     "@types/passport-google-oauth20": "^2.0.16",
     "@types/passport-jwt": "^4.0.1",
     "@types/swagger-jsdoc": "^6.0.4",
-    "@types/swagger-ui-express": "^4.1.8",
+    "@types/swagger-ui-express": "^4.1.8"
+  },
+  "devDependencies": {
     "nodemon": "^3.1.10",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.8.3"
+    "ts-node": "^10.9.2"
   }
 }
