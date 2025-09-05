@@ -1,5 +1,6 @@
 # E-Africa Platform Backend
 
+
 ## Project Overview
 
 This is the backend API for the E-Africa job board and training platform, built with Node.js, Express, TypeScript, and MongoDB. It provides comprehensive RESTful APIs for:
